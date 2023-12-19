@@ -274,7 +274,7 @@ rem Start Updater
 
 echo Updating the repository...
 if exist "%mingit_path%" (
-    %mingit_path% pull
+     pull
 ) else (
     git pull
 )
