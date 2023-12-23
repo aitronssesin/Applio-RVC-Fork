@@ -36,17 +36,18 @@ for %%i in (%*) do (
         set "choice=1"
     ) else if /I "%%i"=="--condaDML" (
         set "choice=2"
+    ) else if "%%~i" neq "" (
+        set "cd=%%~i"
+        cd %cd%
     )
 )
 
-:endProcessArguments
-if %useManual% == "false" (
-    cls
-    echo INFO: It's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
-    echo.
-    pause
-    cls
-)
+cls
+echo INFO: It's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
+echo.
+pause
+cls
+
 
 net session >nul 2>&1
 if %errorLevel% == 0 (
@@ -56,6 +57,7 @@ if %errorLevel% == 0 (
     exit
 )
 
+:endProcessArguments
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 echo.
 
@@ -103,6 +105,10 @@ if %errorlevel% equ 0 (
         if errorlevel 8 echo Warnings or errors occurred during the move.
         cd %repoFolder%
         del install_Applio.bat
+        del Makefile
+        del Dockerfile
+        del docker-compose.yaml
+        del stftpitchshift
         del /q *.sh
         cls
     ) else (
