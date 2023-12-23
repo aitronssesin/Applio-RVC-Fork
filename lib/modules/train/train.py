@@ -20,12 +20,15 @@ n_gpus = len(hps.gpus.split("-"))
 from random import randint, shuffle
 
 import torch
+
 try:
-    import intel_extension_for_pytorch as ipex # pylint: disable=import-error, unused-import
+    import intel_extension_for_pytorch as ipex  # pylint: disable=import-error, unused-import
+
     if torch.xpu.is_available():
         from lib.modules.ipex import ipex_init
         from lib.modules.ipex.gradscaler import gradscaler_init
         from torch.xpu.amp import autocast
+
         GradScaler = gradscaler_init()
         ipex_init()
     else:
@@ -57,7 +60,9 @@ from lib.modules.train.data_utils import (
 
 if hps.version == "v1":
     from lib.modules.infer.infer_pack.models import MultiPeriodDiscriminator
-    from lib.modules.infer.infer_pack.models import SynthesizerTrnMs256NSFsid as RVC_Model_f0
+    from lib.modules.infer.infer_pack.models import (
+        SynthesizerTrnMs256NSFsid as RVC_Model_f0,
+    )
     from lib.modules.infer.infer_pack.models import (
         SynthesizerTrnMs256NSFsid_nono as RVC_Model_nof0,
     )
@@ -78,8 +83,8 @@ from lib.modules.train.mel_processing import mel_spectrogram_torch, spec_to_mel_
 from lib.modules.train.process_ckpt import savee
 
 global_step = 0
-bestEpochStep=0
-lastValue=1
+bestEpochStep = 0
+lastValue = 1
 lowestValue = {"step": 0, "value": float("inf"), "epoch": 0}
 dirtyTb = []
 dirtyValues = []
@@ -88,6 +93,7 @@ dirtyEpochs = []
 continued = False
 
 import csv
+
 
 class EpochRecorder:
     def __init__(self):
@@ -101,10 +107,12 @@ class EpochRecorder:
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return f"[{current_time}] | ({elapsed_time_str})"
 
+
 def reset_stop_flag():
     with open("lib/csvdb/stop.csv", "w+", newline="") as STOPCSVwrite:
         csv_writer = csv.writer(STOPCSVwrite, delimiter=",")
         csv_writer.writerow(["False"])
+
 
 def create_model(hps, model_f0, model_nof0):
     filter_length_adjusted = hps.data.filter_length // 2 + 1
@@ -119,14 +127,16 @@ def create_model(hps, model_f0, model_nof0):
         segment_size_adjusted,
         **hps.model,
         is_half=is_half,
-        sr=sr
+        sr=sr,
     )
+
 
 def move_model_to_cuda_if_available(model, rank):
     if torch.cuda.is_available():
         return model.cuda(rank)
     else:
         return model
+
 
 def create_optimizer(model, hps):
     return torch.optim.AdamW(
@@ -136,25 +146,33 @@ def create_optimizer(model, hps):
         eps=hps.train.eps,
     )
 
+
 def create_ddp_model(model, rank):
     if torch.cuda.is_available():
         return DDP(model, device_ids=[rank])
     else:
         return DDP(model)
 
+
 def create_dataset(hps, if_f0=True):
-    return TextAudioLoaderMultiNSFsid(hps.data.training_files, hps.data) if if_f0 else TextAudioLoader(hps.data.training_files, hps.data)
+    return (
+        TextAudioLoaderMultiNSFsid(hps.data.training_files, hps.data)
+        if if_f0
+        else TextAudioLoader(hps.data.training_files, hps.data)
+    )
+
 
 def create_sampler(dataset, batch_size, n_gpus, rank):
     return DistributedBucketSampler(
-            dataset,
-            batch_size * n_gpus,
-            # [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200,1400],  # 16s
-            [100, 200, 300, 400, 500, 600, 700, 800, 900],  # 16s
-            num_replicas=n_gpus,
-            rank=rank,
-            shuffle=True,
-        )
+        dataset,
+        batch_size * n_gpus,
+        # [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200,1400],  # 16s
+        [100, 200, 300, 400, 500, 600, 700, 800, 900],  # 16s
+        num_replicas=n_gpus,
+        rank=rank,
+        shuffle=True,
+    )
+
 
 def set_collate_fn(if_f0=True):
     return TextAudioCollateMultiNSFsid() if if_f0 else TextAudioCollate()
@@ -186,6 +204,7 @@ def main():
 
     for i in range(n_gpus):
         children[i].join()
+
 
 def run(rank, n_gpus, hps):
     global global_step
@@ -288,26 +307,32 @@ def run(rank, n_gpus, hps):
         global bestEpochStep, lastValue, lowestValue, continued
         if hps.if_retrain_collapse:
             if os.path.exists(f"{hps.model_dir}/col"):
-                with open(f"{hps.model_dir}/col", 'r') as f:
-                    bestEpochStep=global_step = int(f.readline().split(',')[0])
+                with open(f"{hps.model_dir}/col", "r") as f:
+                    bestEpochStep = global_step = int(f.readline().split(",")[0])
                 os.remove(f"{hps.model_dir}/col")
                 continued = True
-            if not os.path.exists(f"{hps.model_dir}/col") and os.path.exists(f"{hps.model_dir}/fitness.csv"):
+            if not os.path.exists(f"{hps.model_dir}/col") and os.path.exists(
+                f"{hps.model_dir}/fitness.csv"
+            ):
                 latest = ""
-                with open(f'{hps.model_dir}/fitness.csv', 'r') as f:
+                with open(f"{hps.model_dir}/fitness.csv", "r") as f:
                     for line in f:
                         if line.strip() != "":
-                            latest = line.split(',')
+                            latest = line.split(",")
                 global_step = int(latest[1])
                 lastValue = float(latest[2])
-                lowestValue = {"step": int(latest[1]), "value": float(latest[2]), "epoch": int(latest[0])}
+                lowestValue = {
+                    "step": int(latest[1]),
+                    "value": float(latest[2]),
+                    "epoch": int(latest[0]),
+                }
                 continued = True
         else:
             global_step = (epoch_str - 1) * len(train_loader)
         # epoch_str = 1
         # global_step = 0
     except:  # 如果首次不能加载，加载pretrain
-        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system("cls" if os.name == "nt" else "clear")
         epoch_str = 1
         global_step = 0
         if hps.pretrainG != "":
@@ -342,7 +367,6 @@ def run(rank, n_gpus, hps):
                 )
         # if "TENSORBOARD_PORT" in os.environ:
         #     logger.info(f'View Tensorboard progress at http://localhost:{os.environ["TENSORBOARD_PORT"]}/?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fd%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fkl%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fmel%22%7D%5D{f"&smoothing={hps.smoothness}" if hps.smoothness else ""}')
-
 
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
         optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
@@ -658,14 +682,20 @@ def train_and_evaluate(
             optim_g,
             hps.train.learning_rate,
             epoch,
-            os.path.join(hps.model_dir, "G_{}.pth".format(global_step if hps.if_latest == 0 else 2333333)),
+            os.path.join(
+                hps.model_dir,
+                "G_{}.pth".format(global_step if hps.if_latest == 0 else 2333333),
+            ),
         )
         utils.save_checkpoint(
             net_d,
             optim_d,
             hps.train.learning_rate,
             epoch,
-            os.path.join(hps.model_dir, "D_{}.pth".format(global_step if hps.if_latest == 0 else 2333333)),
+            os.path.join(
+                hps.model_dir,
+                "D_{}.pth".format(global_step if hps.if_latest == 0 else 2333333),
+            ),
         )
         if rank == 0 and hps.save_every_weights == "1":
             if hasattr(net_g, "module"):
@@ -688,12 +718,13 @@ def train_and_evaluate(
                     ),
                 )
             )
-    
+
     stopbtn = False
     try:
-        with open("lib/csvdb/stop.csv", 'r') as csv_file:
+        with open("lib/csvdb/stop.csv", "r") as csv_file:
             stopbtn_str = next(csv.reader(csv_file), [None])[0]
-            if stopbtn_str is not None: stopbtn = stopbtn_str.lower() == 'true'
+            if stopbtn_str is not None:
+                stopbtn = stopbtn_str.lower() == "true"
     except (ValueError, TypeError, FileNotFoundError, IndexError) as e:
         print(f"Handling exception: {e}")
         stopbtn = False
@@ -702,7 +733,11 @@ def train_and_evaluate(
         if os.path.exists(f"{hps.model_dir}/col"):
             os.remove(f"{hps.model_dir}/col")
         logger.info("Stop Button was pressed. The program is closed.")
-        ckpt = net_g.module.state_dict() if hasattr(net_g, "module") else net_g.state_dict()
+        ckpt = (
+            net_g.module.state_dict()
+            if hasattr(net_g, "module")
+            else net_g.state_dict()
+        )
         logger.info(
             "saving final ckpt:%s"
             % (
@@ -717,17 +752,25 @@ def train_and_evaluate(
 
     global dirtyTb, dirtySteps, dirtyValues, dirtyEpochs, bestEpochStep, lastValue, continued
 
-    if rank == 0 and hps.if_retrain_collapse and loss_gen_all / lastValue < hps.collapse_threshold:
-        logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
-        logger.warning(f'loss_gen_all={loss_gen_all.item()}, last value={lastValue}, drop % {loss_gen_all.item() / lastValue * 100}')
+    if (
+        rank == 0
+        and hps.if_retrain_collapse
+        and loss_gen_all / lastValue < hps.collapse_threshold
+    ):
+        logger.warning(
+            "Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse"
+        )
+        logger.warning(
+            f"loss_gen_all={loss_gen_all.item()}, last value={lastValue}, drop % {loss_gen_all.item() / lastValue * 100}"
+        )
         if hps.if_retrain_collapse:
             logger.info("Restarting training from last fit epoch...")
-            with open(f"{hps.model_dir}/col", 'w') as f:
-                f.write(f'{bestEpochStep},{epoch}')
+            with open(f"{hps.model_dir}/col", "w") as f:
+                f.write(f"{bestEpochStep},{epoch}")
             os._exit(15)
     if rank == 0:
         lastValue = loss_gen_all.item()
-    
+
     if rank == 0 and not hps.if_stop_on_fit:
         logger.info("Epoch: {} {}".format(epoch, epoch_recorder.record()))
     if rank == 0 and hps.if_stop_on_fit:
@@ -801,9 +844,9 @@ def train_and_evaluate(
                     scalars=dirtyTb[i]["scalars"],
                 )
                 if not os.path.exists(f"{hps.model_dir}/fitness.csv"):
-                    with open(f"{hps.model_dir}/fitness.csv", 'w', newline='') as f:
+                    with open(f"{hps.model_dir}/fitness.csv", "w", newline="") as f:
                         pass
-                with open(f"{hps.model_dir}/fitness.csv", 'a', newline='') as f:
+                with open(f"{hps.model_dir}/fitness.csv", "a", newline="") as f:
                     csvwriter = csv.writer(f)
                     csvwriter.writerow([dirtyEpochs[i], dirtySteps[i], dirtyValues[i]])
 
@@ -846,7 +889,10 @@ def train_and_evaluate(
         logger.info(message)
         # if overtraining is detected, exit (idk what the 2333333 stands for but it seems like success ¯\_(ツ)_/¯)
         if epoch - best["epoch"] >= 100:
-            shutil.copy2(f"logs/weights/{hps.name}_fittest.pth", os.path.join(hps.model_dir,f"{hps.name}_{epoch}.pth"))
+            shutil.copy2(
+                f"logs/weights/{hps.name}_fittest.pth",
+                os.path.join(hps.model_dir, f"{hps.name}_{epoch}.pth"),
+            )
             logger.info(
                 f'No improvement found after epoch: [e{best["epoch"]}]. The program is closed.'
             )
@@ -872,6 +918,7 @@ def train_and_evaluate(
     if continued and rank == 0:
         continued = False
 
+
 def smooth(scalars, weight):
     last = 0
     smoothed = []
@@ -886,25 +933,27 @@ def smooth(scalars, weight):
         smoothed.append(smoothed_val)
     return smoothed
 
+
 def getBestValue():
     global lowestValue, dirtySteps, dirtyValues, dirtyEpochs
     steps = []
     values = []
     epochs = []
     if os.path.exists(f"{hps.model_dir}/fitness.csv"):
-        with open(f'{hps.model_dir}/fitness.csv', 'r') as f:
+        with open(f"{hps.model_dir}/fitness.csv", "r") as f:
             for line in f:
                 if line.strip() != "":
-                    line = line.split(',')
+                    line = line.split(",")
                     epochs.append(int(line[0]))
                     steps.append(line[1])
                     values.append(float(line[2]))
     steps += dirtySteps
-    values = smooth([*values,*dirtyValues], hps.smoothness)
+    values = smooth([*values, *dirtyValues], hps.smoothness)
     epochs += dirtyEpochs
     if lowestValue["value"] >= values[-1] and epochs[-1] > 10:
         lowestValue = {"step": steps[-1], "value": values[-1], "epoch": epochs[-1]}
     return lowestValue
+
 
 if __name__ == "__main__":
     torch.multiprocessing.set_start_method("spawn")

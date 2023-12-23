@@ -14,14 +14,17 @@ import click
 app = Flask(__name__)
 
 # Disable flask starting message
-log = logging.getLogger('werkzeug')
+log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
+
 
 def secho(text, file=None, nl=None, err=None, color=None, **styles):
     pass
 
+
 def echo(text, file=None, nl=None, err=None, color=None, **styles):
     pass
+
 
 click.echo = echo
 click.secho = secho
@@ -37,7 +40,9 @@ for _ in range(2):
 sys.path.append(now_dir)
 
 from assets.i18n.i18n import I18nAuto
+
 i18n = I18nAuto()
+
 
 # Use the code from the resources module but with some changes
 def find_folder_parent(search_dir, folder_name):
@@ -46,16 +51,20 @@ def find_folder_parent(search_dir, folder_name):
             return os.path.abspath(dirpath)
     return None
 
+
 def get_mediafire_download_link(url):
     response = requests.get(url)
     response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'html.parser')
-    download_button = soup.find('a', {'class': 'input popsok', 'aria-label': 'Download file'})
+    soup = BeautifulSoup(response.text, "html.parser")
+    download_button = soup.find(
+        "a", {"class": "input popsok", "aria-label": "Download file"}
+    )
     if download_button:
-        download_link = download_button.get('href')
+        download_link = download_button.get("href")
         return download_link
     else:
         return None
+
 
 def download_from_url(url):
     file_path = find_folder_parent(now_dir, "assets")
@@ -94,23 +103,33 @@ def download_from_url(url):
             os.chdir(zips_path)
             if "/blob/" in url:
                 url = url.replace("/blob/", "/resolve/")
-            
+
             response = requests.get(url, stream=True)
             if response.status_code == 200:
                 file_name = url.split("/")[-1]
                 file_name = file_name.replace("%20", "_")
-                total_size_in_bytes = int(response.headers.get('content-length', 0))
+                total_size_in_bytes = int(response.headers.get("content-length", 0))
                 block_size = 1024  # 1 Kibibyte
                 progress_bar_length = 50
                 progress = 0
-                with open(os.path.join(zips_path, file_name), 'wb') as file:
+                with open(os.path.join(zips_path, file_name), "wb") as file:
                     for data in response.iter_content(block_size):
                         file.write(data)
                         progress += len(data)
                         progress_percent = int((progress / total_size_in_bytes) * 100)
-                        num_dots = int((progress / total_size_in_bytes) * progress_bar_length)
-                        progress_bar = "[" + "." * num_dots + " " * (progress_bar_length - num_dots) + "]"
-                        print(f"{progress_percent}% {progress_bar} {progress}/{total_size_in_bytes}  ", end="\r")
+                        num_dots = int(
+                            (progress / total_size_in_bytes) * progress_bar_length
+                        )
+                        progress_bar = (
+                            "["
+                            + "." * num_dots
+                            + " " * (progress_bar_length - num_dots)
+                            + "]"
+                        )
+                        print(
+                            f"{progress_percent}% {progress_bar} {progress}/{total_size_in_bytes}  ",
+                            end="\r",
+                        )
                         if progress_percent == 100:
                             print("\n")
             else:
@@ -147,9 +166,7 @@ def download_from_url(url):
             os.chdir("./assets/zips")
             if file.status_code == 200:
                 name = url.split("/")
-                with open(
-                    os.path.join(name[-1]), "wb"
-                ) as newfile:
+                with open(os.path.join(name[-1]), "wb") as newfile:
                     newfile.write(file.content)
             else:
                 return None
@@ -185,11 +202,11 @@ def download_from_url(url):
             else:
                 return None
         elif "www.weights.gg" in url:
-            #Pls weights creator dont fix this because yes. c:
+            # Pls weights creator dont fix this because yes. c:
             url_parts = url.split("/")
             weights_gg_index = url_parts.index("www.weights.gg")
             if weights_gg_index != -1 and weights_gg_index < len(url_parts) - 1:
-                model_part = "/".join(url_parts[weights_gg_index + 1:])
+                model_part = "/".join(url_parts[weights_gg_index + 1 :])
                 if "models" in model_part:
                     model_part = model_part.split("models/")[-1]
                     print(model_part)
@@ -198,7 +215,10 @@ def download_from_url(url):
                         response = requests.get(download_url)
                         if response.status_code == 200:
                             soup = BeautifulSoup(response.text, "html.parser")
-                            button_link = soup.find("a", class_="bg-black text-white px-3 py-2 rounded-lg flex items-center gap-1")
+                            button_link = soup.find(
+                                "a",
+                                class_="bg-black text-white px-3 py-2 rounded-lg flex items-center gap-1",
+                            )
                             if button_link:
                                 download_link = button_link["href"]
                                 result = download_from_url(download_link)
@@ -236,6 +256,7 @@ def download_from_url(url):
     else:
         return None
 
+
 def extract_and_show_progress(zipfile_path, unzips_path):
     try:
         # Use shutil because zipfile not working
@@ -246,8 +267,7 @@ def extract_and_show_progress(zipfile_path, unzips_path):
         return False
 
 
-@app.route('/download/<path:url>', methods=['GET'])
-
+@app.route("/download/<path:url>", methods=["GET"])
 def load_downloaded_model(url):
     parent_path = find_folder_parent(now_dir, "assets")
     response = requests.get(url)
@@ -288,7 +308,7 @@ def load_downloaded_model(url):
                     "logs",
                     os.path.normpath(str(model_name).replace(".zip", "")),
                 )
-                
+
                 success = extract_and_show_progress(zipfile_path, unzips_path)
                 if success:
                     print(f"Extracción exitosa: {model_name}")
@@ -348,9 +368,9 @@ def load_downloaded_model(url):
 
         if not index_file and not model_file:
             print(i18n("No relevant file was found to upload."))
-        
+
         os.chdir(parent_path)
-        if 'text/html' in request.headers.get('Accept', ''):
+        if "text/html" in request.headers.get("Accept", ""):
             return redirect("http://localhost:8000/downloaded", code=302)
         else:
             return ""
@@ -366,15 +386,18 @@ def load_downloaded_model(url):
     finally:
         os.chdir(parent_path)
 
-@app.route('/downloaded', methods=['GET'])
-def downloaded():
-    return render_template('sucess.html')
 
-@app.route('/shutdown', methods=['POST'])
+@app.route("/downloaded", methods=["GET"])
+def downloaded():
+    return render_template("sucess.html")
+
+
+@app.route("/shutdown", methods=["POST"])
 def shoutdown():
-    print("This flask server is shutting down... Please close the window!")   
+    print("This flask server is shutting down... Please close the window!")
     pid = os.getpid()
     os.kill(pid, signal.SIGTERM)
 
-if __name__ == '__main__':
-    app.run(host='localhost', port=8000)
+
+if __name__ == "__main__":
+    app.run(host="localhost", port=8000)

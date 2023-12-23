@@ -2,6 +2,7 @@ import sys
 
 sys.path.append("..")
 import os
+
 now_dir = os.getcwd()
 
 from dotenv import load_dotenv
@@ -19,6 +20,7 @@ from gtts import gTTS
 import edge_tts
 import scipy.io.wavfile as wavfile
 import nltk
+
 nltk.download("punkt", quiet=True)
 from nltk.tokenize import sent_tokenize
 
@@ -27,7 +29,8 @@ import json
 import ssl
 from typing import Any, Dict, List, Optional
 import asyncio
-logging.getLogger('asyncio').setLevel(logging.FATAL)
+
+logging.getLogger("asyncio").setLevel(logging.FATAL)
 
 import aiohttp
 import certifi
@@ -37,8 +40,69 @@ VOICE_LIST = (
     + "readaloud/voices/list?trustedclienttoken="
     + "6A5AA1D4EAFF4E9FB37E23D68491D6F4"
 )
+
+
 class Speech:
-    LANGUAGE_ABBREVIATIONS = {'afrikaans': 'af', 'albanian': 'sq', 'arabic': 'ar', 'bengali': 'bn', 'bosnian': 'bs', 'bulgarian': 'bg', 'catalan': 'ca', 'chinese (simplified)': 'zh-CN', 'chinese (traditional)': 'zh-TW', 'croatian': 'hr', 'czech': 'cs', 'danish': 'da', 'dutch': 'nl', 'english': 'en', 'estonian': 'et', 'filipino': 'tl', 'finnish': 'fi', 'french': 'fr', 'german': 'de', 'greek': 'el', 'gujarati': 'gu', 'hebrew': 'iw', 'hindi': 'hi', 'hungarian': 'hu', 'icelandic': 'is', 'indonesian': 'id', 'italian': 'it', 'japanese': 'ja', 'javanese': 'jw', 'kannada': 'kn', 'khmer': 'km', 'korean': 'ko', 'latin': 'la', 'latvian': 'lv', 'malay': 'ms', 'malayalam': 'ml', 'marathi': 'mr', 'myanmar (burmese)': 'my', 'nepali': 'ne', 'norwegian': 'no', 'polish': 'pl', 'portuguese': 'pt', 'romanian': 'ro', 'russian': 'ru', 'serbian': 'sr', 'sinhala': 'si', 'slovak': 'sk', 'spanish': 'es', 'sundanese': 'su', 'swahili': 'sw', 'swedish': 'sv', 'tamil': 'ta', 'telugu': 'te', 'thai': 'th', 'turkish': 'tr', 'ukrainian': 'uk', 'urdu': 'ur', 'vietnamese': 'vi'}
+    LANGUAGE_ABBREVIATIONS = {
+        "afrikaans": "af",
+        "albanian": "sq",
+        "arabic": "ar",
+        "bengali": "bn",
+        "bosnian": "bs",
+        "bulgarian": "bg",
+        "catalan": "ca",
+        "chinese (simplified)": "zh-CN",
+        "chinese (traditional)": "zh-TW",
+        "croatian": "hr",
+        "czech": "cs",
+        "danish": "da",
+        "dutch": "nl",
+        "english": "en",
+        "estonian": "et",
+        "filipino": "tl",
+        "finnish": "fi",
+        "french": "fr",
+        "german": "de",
+        "greek": "el",
+        "gujarati": "gu",
+        "hebrew": "iw",
+        "hindi": "hi",
+        "hungarian": "hu",
+        "icelandic": "is",
+        "indonesian": "id",
+        "italian": "it",
+        "japanese": "ja",
+        "javanese": "jw",
+        "kannada": "kn",
+        "khmer": "km",
+        "korean": "ko",
+        "latin": "la",
+        "latvian": "lv",
+        "malay": "ms",
+        "malayalam": "ml",
+        "marathi": "mr",
+        "myanmar (burmese)": "my",
+        "nepali": "ne",
+        "norwegian": "no",
+        "polish": "pl",
+        "portuguese": "pt",
+        "romanian": "ro",
+        "russian": "ru",
+        "serbian": "sr",
+        "sinhala": "si",
+        "slovak": "sk",
+        "spanish": "es",
+        "sundanese": "su",
+        "swahili": "sw",
+        "swedish": "sv",
+        "tamil": "ta",
+        "telugu": "te",
+        "thai": "th",
+        "turkish": "tr",
+        "ukrainian": "uk",
+        "urdu": "ur",
+        "vietnamese": "vi",
+    }
 
     def get_language_abbreviation(self, language):
         return self.LANGUAGE_ABBREVIATIONS.get(language, language)
@@ -51,7 +115,6 @@ class Speech:
 
     async def create_speech_file(self, text, file_name):
         try:
-
             err = await self.download_if_not_exists(file_name, text)
             if err:
                 return "", err
@@ -68,7 +131,6 @@ class Speech:
             return file_name
         except Exception as e:
             return e
-
 
     async def download_if_not_exists(self, file_name, text):
         try:
@@ -87,12 +149,15 @@ class Speech:
             print("Exception during download:", e)
             return e
 
+
 def get_google_voice():
     return list(Speech.LANGUAGE_ABBREVIATIONS.keys())
+
 
 # ||-----------------------------------------------------------------------------------||
 # ||                         Obtained from dependency edge_tts                         ||
 # ||-----------------------------------------------------------------------------------||
+
 
 async def list_voices(*, proxy: Optional[str] = None) -> Any:
     """
@@ -126,20 +191,23 @@ async def list_voices(*, proxy: Optional[str] = None) -> Any:
         ) as url:
             data = json.loads(await url.text())
     return data
-async def create(custom_voices: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+
+
+async def create(
+    custom_voices: Optional[List[Dict[str, Any]]] = None
+) -> List[Dict[str, Any]]:
     """
     Creates a list of voices with all available voices and their attributes.
     """
     voices = await list_voices() if custom_voices is None else custom_voices
     voices = [
-        {**voice, **{"Language": voice["Locale"].split("-")[0]}}
-        for voice in voices
+        {**voice, **{"Language": voice["Locale"].split("-")[0]}} for voice in voices
     ]
     simplified_voices = [
-        {'ShortName': voice['ShortName'], 'Gender': voice['Gender']}
-        for voice in voices
+        {"ShortName": voice["ShortName"], "Gender": voice["Gender"]} for voice in voices
     ]
     return simplified_voices
+
 
 async def loop_main():
     voices = await create()
@@ -151,12 +219,12 @@ def get_edge_voice():
     try:
         loop = asyncio.get_event_loop()
         voices_json = loop.run_until_complete(loop_main())
-        #loop.close()
+        # loop.close()
         voices = json.loads(voices_json)
         tts_voice = []
         for voice in voices:
-            short_name = voice['ShortName']
-            gender = voice['Gender']
+            short_name = voice["ShortName"]
+            gender = voice["Gender"]
             formatted_entry = f"{short_name}-{gender}"
             tts_voice.append(formatted_entry)
             # print(f"{short_name}-{gender}")
@@ -167,8 +235,10 @@ def get_edge_voice():
         else:
             return []
 
+
 set_google_voice = get_google_voice()
 set_edge_voice = get_edge_voice()
+
 
 def update_tts_methods_voice(select_value):
     # ["Edge-tts", "RVG-tts", "Bark-tts"]
@@ -181,7 +251,9 @@ def update_tts_methods_voice(select_value):
 async def process_google_tts(language, tts_text, output_folder):
     try:
         script = tts_text.replace("\n", " ").strip()
-        speech = Speech(output=output_folder, language=language, proxy=None, handler=None)
+        speech = Speech(
+            output=output_folder, language=language, proxy=None, handler=None
+        )
         google_out_filename = await speech.speak(script)
         print(google_out_filename)
         return google_out_filename
@@ -189,7 +261,8 @@ async def process_google_tts(language, tts_text, output_folder):
     except Exception as e:
         print(f"{e}")
         return None
-    
+
+
 def use_tts(
     tts_text,
     tts_voice,
@@ -210,19 +283,23 @@ def use_tts(
     output_count = 1
 
     while True:
-        converted_tts_filename = os.path.join(output_folder, f"tts_out_{output_count}.wav")
-        
+        converted_tts_filename = os.path.join(
+            output_folder, f"tts_out_{output_count}.wav"
+        )
+
         if not os.path.exists(converted_tts_filename):
             break
         output_count += 1
     output_count = 1
     while True:
-        google_out_filename = os.path.join(output_folder, f"google_out_{output_count}.wav")
-        
+        google_out_filename = os.path.join(
+            output_folder, f"google_out_{output_count}.wav"
+        )
+
         if not os.path.exists(google_out_filename):
             break
         output_count += 1
-    
+
     if len(tts_text) > 3900 and tts_method == "Google-tts":
         tts_text = tts_text[:3900]
         print("Google Traductor; limit to 3900 characters")
@@ -248,7 +325,7 @@ def use_tts(
                 tts = gTTS("a", lang=language)
                 tts.save(converted_tts_filename)
                 print("Error: Audio will be replaced.")
-        
+
         try:
             vc.get_vc(model_path)
             info_, (sample_, audio_output_) = vc.vc_single_dont_save(
@@ -271,14 +348,16 @@ def use_tts(
                 f0_max=1100,
                 note_max=1100,
             )
-            vc_output_filename = os.path.join(output_folder, f"converted_tts_{output_count}.wav")
+            vc_output_filename = os.path.join(
+                output_folder, f"converted_tts_{output_count}.wav"
+            )
             wavfile.write(
                 vc_output_filename,
                 rate=sample_,
                 data=audio_output_,
             )
 
-            return vc_output_filename,converted_tts_filename
+            return vc_output_filename, converted_tts_filename
         except Exception as e:
             print(f"{e}")
             return None, None
@@ -287,7 +366,9 @@ def use_tts(
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            google_out_filename = loop.run_until_complete(process_google_tts(tts_voice, tts_text, google_out_filename))
+            google_out_filename = loop.run_until_complete(
+                process_google_tts(tts_voice, tts_text, google_out_filename)
+            )
             loop.close()
 
             vc.get_vc(model_path)
@@ -312,8 +393,10 @@ def use_tts(
                 f0_max=1100,
                 note_max=1100,
             )
-            
-            vc_output_filename = os.path.join(output_folder, f"converted_google_{output_count}.wav")
+
+            vc_output_filename = os.path.join(
+                output_folder, f"converted_google_{output_count}.wav"
+            )
             wavfile.write(
                 vc_output_filename,
                 rate=sample_,

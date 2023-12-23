@@ -12,7 +12,9 @@ from torch.nn.utils import remove_weight_norm, spectral_norm, weight_norm
 
 from lib.modules.infer.infer_pack import attentions, commons, modules
 from lib.modules.infer.infer_pack.commons import get_padding, init_weights
+
 has_xpu = bool(hasattr(torch, "xpu") and torch.xpu.is_available())
+
 
 class TextEncoder256(nn.Module):
     def __init__(
@@ -1157,7 +1159,9 @@ class DiscriminatorP(torch.nn.Module):
         if t % self.period != 0:  # pad first
             n_pad = self.period - (t % self.period)
             if has_xpu and x.dtype == torch.bfloat16:
-                x = F.pad(x.to(dtype=torch.float16), (0, n_pad), "reflect").to(dtype=torch.bfloat16)
+                x = F.pad(x.to(dtype=torch.float16), (0, n_pad), "reflect").to(
+                    dtype=torch.bfloat16
+                )
             else:
                 x = F.pad(x, (0, n_pad), "reflect")
             t = t + n_pad

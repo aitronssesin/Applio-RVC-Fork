@@ -1,5 +1,3 @@
-
-
 import csv
 
 # praatEXE = join('.',os.path.abspath(os.getcwd()) + r"\Praat.exe")
@@ -30,4 +28,3 @@ def CSVutil(file, rw, type, *args):
         with open(file, rw, newline="") as fileCSVwrite:
             csv_writer = csv.writer(fileCSVwrite, delimiter=",")
             csv_writer.writerow([stop])
-

@@ -62,9 +62,7 @@ def audio2(input_file, output_file, format, sr):
 def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
     file = file.strip(' \n"')
     if not os.path.exists(file):
-        raise RuntimeError(
-            "Wrong audio path, that does not exist."
-        )
+        raise RuntimeError("Wrong audio path, that does not exist.")
 
     converted = False
     try:

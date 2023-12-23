@@ -1,9 +1,12 @@
 import json
 import sys
-sys.path.append('..')
+
+sys.path.append("..")
 import logging
 
 logger = logging.getLogger(__name__)
+
+
 def load_language_list(language):
     try:
         with open(f"./assets/i18n/langs/{language}.json", "r", encoding="utf-8") as f:
@@ -24,8 +27,10 @@ class I18nAuto:
     >>> i18n.print()
     Using Language: en_US
     """
+
     def __init__(self, language=None):
         from locale import getdefaultlocale
+
         language = language or getdefaultlocale()[0]
 
         # Check if a specific language variant exists, e.g., 'es_ES'
@@ -41,7 +46,7 @@ class I18nAuto:
                     break
             else:
                 # If no match found, default to 'en_US'.
-                self.language = 'en_US'
+                self.language = "en_US"
 
         self.language_map = load_language_list(self.language)
 
@@ -50,12 +55,17 @@ class I18nAuto:
         from os import listdir
         from os.path import isfile, join
 
-        language_files = [f for f in listdir("./assets/i18n/langs/") if isfile(join("./assets/i18n/langs/", f))]
+        language_files = [
+            f
+            for f in listdir("./assets/i18n/langs/")
+            if isfile(join("./assets/i18n/langs/", f))
+        ]
         return [lang.replace(".json", "") for lang in language_files]
 
     @staticmethod
     def _language_exists(language):
         from os.path import exists
+
         return exists(f"./assets/i18n/langs/{language}.json")
 
     def __call__(self, key):

@@ -115,7 +115,7 @@ except Exception as e:
     except Exception as e:
         logger.error("Failed to start the Flask server")
         logger.error(e)
-        
+
 os.makedirs(tmp, exist_ok=True)
 os.makedirs(os.path.join(now_dir, "logs"), exist_ok=True)
 os.makedirs(os.path.join(now_dir, "logs/weights"), exist_ok=True)

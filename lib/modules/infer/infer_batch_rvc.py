@@ -34,7 +34,9 @@ class Config:
                 or "1070" in self.gpu_name
                 or "1080" in self.gpu_name
             ):
-                print("16-series/10-series graphics cards and P40 forced single precision.")
+                print(
+                    "16-series/10-series graphics cards and P40 forced single precision."
+                )
                 self.is_half = False
                 for config_file in ["32k.json", "40k.json", "48k.json"]:
                     with open(f"assets/configs/{config_file}", "r") as f:
